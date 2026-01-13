@@ -1,18 +1,18 @@
 import base64, binascii, re
 from fasthtml.core import *
 from fasthtml.starlette import *
-from typing import Mapping
+from typing import Mapping, Callable
 from hmac import compare_digest
 
 auth_hdrs = {'WWW-Authenticate': 'Basic realm="login"'}
 
 class BasicAuthMiddleware(MiddlewareBase):
-    def __init__(self, app, cb, skip=None): self.app,self.cb,self.skip = app,cb,skip or []
+    def __init__(self, app: ASGIApp, cb: Callable, skip: list[str] | None = None): self.app,self.cb,self.skip = app,cb,skip or []
 
-    async def _resp(self, scope, receive, send, resp):
+    async def _resp(self, scope: Scope, receive: Receive, send: Send, resp: Response) -> None:
         await (send({"type": "websocket.close", "code": 1000}) if scope["type"]=="websocket" else resp(scope, receive, send))
 
-    async def __call__(self, scope, receive, send) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         conn = await super().__call__(scope, receive, send)
         if not conn: return
         request = Request(scope, receive)
@@ -23,7 +23,7 @@ class BasicAuthMiddleware(MiddlewareBase):
             scope["auth"] = res
         await self.app(scope, receive, send)
 
-    async def authenticate(self, conn):
+    async def authenticate(self, conn: HTTPConnection) -> str | None:
         if "Authorization" not in conn.headers: return
         auth = conn.headers["Authorization"]
         try:
@@ -34,7 +34,7 @@ class BasicAuthMiddleware(MiddlewareBase):
         user, _, pwd = decoded.partition(":")
         if self.cb(user,pwd): return user
 
-def user_pwd_auth(lookup=None, skip=None, **kwargs):
+def user_pwd_auth(lookup: Mapping[str, str] | Callable | None = None, skip: list[str] | None = None, **kwargs) -> Middleware:
     if isinstance(lookup,Mapping): kwargs = lookup | kwargs
     def cb(u,p):
         if u=='logout' or not u or not p: return
@@ -42,5 +42,5 @@ def user_pwd_auth(lookup=None, skip=None, **kwargs):
         return compare_digest(kwargs.get(u,'').encode("utf-8"), p.encode("utf-8"))
     return Middleware(BasicAuthMiddleware, cb=cb, skip=skip)
 
-def basic_logout(request):
+def basic_logout(request: Request) -> str:
     return f'{request.url.scheme}://logout:logout@{request.headers["host"]}/'

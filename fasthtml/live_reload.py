@@ -1,10 +1,11 @@
 from starlette.routing import WebSocketRoute
-from starlette.websockets import WebSocketDisconnect
-from fasthtml.basics import FastHTML, Script
+from starlette.websockets import WebSocketDisconnect, WebSocket
+from fasthtml.basics import FastHTML, Script, FT
+from typing import Any
 
 __all__ = ["FastHTMLWithLiveReload"]
 
-def LiveReloadJs(reload_attempts:int=20, reload_interval:int=1000, **kwargs):
+def LiveReloadJs(reload_attempts: int = 20, reload_interval: int = 1000, **kwargs) -> FT:
     src = """
     (() => {
         let attempts = 0;
@@ -24,7 +25,7 @@ def LiveReloadJs(reload_attempts:int=20, reload_interval:int=1000, **kwargs):
     """
     return Script(src % (reload_attempts, reload_interval))
 
-async def live_reload_ws(websocket):
+async def live_reload_ws(websocket: WebSocket) -> None:
     await websocket.accept()
     try:
         while True: await websocket.receive()
@@ -54,7 +55,7 @@ class FastHTMLWithLiveReload(FastHTML):
         Run:
             serve()
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         # "hdrs" and "routes" can be missing, None, a list or a tuple.
         kwargs["hdrs"] = [*(kwargs.get("hdrs") or []), LiveReloadJs(**kwargs)]
         kwargs["routes"] = [*(kwargs.get("routes") or []), WebSocketRoute("/live-reload", endpoint=live_reload_ws)]
