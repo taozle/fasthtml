@@ -1,7 +1,8 @@
 from fastcore.xml import FT
-from fasthtml.core import FtResponse
+from fasthtml.core import FtResponse, FastHTML, Request
 from fasthtml.components import *
 from fasthtml.xtend import *
+from typing import Any
 
 tcid='fh-toast-container'
 sk = "toasts"
@@ -41,24 +42,24 @@ if (!htmx.find('#fh-toast-container')) {
     }
 });'''
 
-def Toast(message: str, typ: str = "info", dismiss: bool = False, duration:int=5000):
+def Toast(message: str, typ: str = "info", dismiss: bool = False, duration: int = 5000) -> FT:
     x_btn = Button('x', cls="fh-toast-dismiss", onclick="htmx.remove(this?.parentElement);") if dismiss else None
     return Div(Span(message), x_btn, cls=f"fh-toast fh-toast-{typ}", hx_on_transitionend=f"setTimeout(() => this?.remove(), {duration});")
 
-def add_toast(sess, message: str, typ: str = "info", dismiss: bool = False):
+def add_toast(sess: dict, message: str, typ: str = "info", dismiss: bool = False) -> None:
     assert typ in ("info", "success", "warning", "error"), '`typ` not in ("info", "success", "warning", "error")'
     sess.setdefault(sk, []).append((message, typ, dismiss))
 
-def render_toasts(sess):
+def render_toasts(sess: dict) -> FT:
     toasts = [Toast(msg, typ, dismiss, sess['toast_duration']) for msg, typ, dismiss in sess.pop(sk, [])]
     return Div(*toasts, id=tcid, hx_swap_oob=f'beforeend:#{tcid}')
 
-def toast_after(resp, req, sess):
+def toast_after(resp: Any, req: Request, sess: dict) -> None:
     if sk in sess and (not resp or isinstance(resp, (tuple,FT,FtResponse))):
         sess['toast_duration'] = req.app.state.toast_duration
         req.injects.append(render_toasts(sess))
 
-def setup_toasts(app, duration=5000):
+def setup_toasts(app: FastHTML, duration: int = 5000) -> None:
     app.state.toast_duration = duration
     app.hdrs += [Style(toast_css), Script(js)]
     app.after.append(toast_after)

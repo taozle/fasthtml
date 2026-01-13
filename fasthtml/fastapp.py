@@ -10,7 +10,7 @@ from .live_reload import FastHTMLWithLiveReload
 
 __all__ = ['fast_app']
 
-def _get_tbl(dt, nm, schema):
+def _get_tbl(dt: Database, nm: str, schema: dict) -> tuple:
     render = schema.pop('render', None)
     tbl = dt[nm]
     if tbl not in dt: tbl.create(**schema)

@@ -15,7 +15,7 @@ import secrets, httpx, time
 # %% ../nbs/api/08_oauth.ipynb
 class _AppClient(WebApplicationClient):
     id_key = 'sub'
-    def __init__(self, client_id, client_secret, code=None, scope=None, **kwargs):
+    def __init__(self, client_id, client_secret, code=None, scope=None, **kwargs) -> None:
         super().__init__(client_id, code=code, scope=scope, **kwargs)
         self.client_secret = client_secret
 
@@ -26,14 +26,14 @@ class GoogleAppClient(_AppClient):
     token_url = "https://oauth2.googleapis.com/token"
     info_url = "https://openidconnect.googleapis.com/v1/userinfo"
     
-    def __init__(self, client_id, client_secret, code=None, scope=None, project_id=None, **kwargs):
+    def __init__(self, client_id, client_secret, code=None, scope=None, project_id=None, **kwargs) -> None:
         scope_pre = "https://www.googleapis.com/auth/userinfo"
         if not scope: scope=["openid", f"{scope_pre}.email", f"{scope_pre}.profile"]
         super().__init__(client_id, client_secret, code=code, scope=scope, **kwargs)
         self.project_id = project_id
     
     @classmethod
-    def from_file(cls, fname, code=None, scope=None, **kwargs):
+    def from_file(cls, fname, code=None, scope=None, **kwargs) -> 'GoogleAppClient':
         cred = Path(fname).read_json()['web']
         return cls(cred['client_id'], client_secret=cred['client_secret'], project_id=cred['project_id'],
                   code=code, scope=scope, **kwargs)
@@ -47,7 +47,7 @@ class GitHubAppClient(_AppClient):
     info_url = "https://api.github.com/user"
     id_key = 'id'
 
-    def __init__(self, client_id, client_secret, code=None, scope=None, **kwargs):
+    def __init__(self, client_id, client_secret, code=None, scope=None, **kwargs) -> None:
         super().__init__(client_id, client_secret, code=code, scope=scope, **kwargs)
 
 # %% ../nbs/api/08_oauth.ipynb
@@ -58,7 +58,7 @@ class HuggingFaceClient(_AppClient):
     token_url = f"{prefix}token"
     info_url = f"{prefix}userinfo"
     
-    def __init__(self, client_id, client_secret, code=None, scope=None, state=None, **kwargs):
+    def __init__(self, client_id, client_secret, code=None, scope=None, state=None, **kwargs) -> None:
         if not scope: scope=["openid","profile"]
         if not state: state=secrets.token_urlsafe(16)
         super().__init__(client_id, client_secret, code=code, scope=scope, state=state, **kwargs)
@@ -72,13 +72,13 @@ class DiscordAppClient(_AppClient):
     info_url = "https://discord.com/api/users/@me"
     id_key = 'id'
 
-    def __init__(self, client_id, client_secret, is_user=False, perms=0, scope=None, **kwargs):
+    def __init__(self, client_id, client_secret, is_user=False, perms=0, scope=None, **kwargs) -> None:
         if not scope: scope="applications.commands applications.commands.permissions.update identify"
         self.integration_type = 1 if is_user else 0
         self.perms = perms
         super().__init__(client_id, client_secret, scope=scope, **kwargs)
 
-    def login_link(self, redirect_uri=None, scope=None, state=None):
+    def login_link(self, redirect_uri=None, scope=None, state=None) -> str:
         use_scope = scope or self.scope
         d = dict(response_type='code', client_id=self.client_id,
                  integration_type=self.integration_type, scope=use_scope)
@@ -86,7 +86,7 @@ class DiscordAppClient(_AppClient):
         if redirect_uri: d['redirect_uri'] = redirect_uri
         return f'{self.base_url}?' + urlencode(d)
 
-    def parse_response(self, code, redirect_uri=None):
+    def parse_response(self, code, redirect_uri=None) -> None:
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         data = dict(grant_type='authorization_code', code=code)
         if redirect_uri: data['redirect_uri'] = redirect_uri
@@ -97,18 +97,18 @@ class DiscordAppClient(_AppClient):
 # %% ../nbs/api/08_oauth.ipynb
 class Auth0AppClient(_AppClient):
     "A `WebApplicationClient` for Auth0 OAuth2"
-    def __init__(self, domain, client_id, client_secret, code=None, scope=None, redirect_uri="", **kwargs):
+    def __init__(self, domain, client_id, client_secret, code=None, scope=None, redirect_uri="", **kwargs) -> None:
         self.redirect_uri,self.domain = redirect_uri,domain
         config = self._fetch_openid_config()
         self.base_url,self.token_url,self.info_url = config["authorization_endpoint"],config["token_endpoint"],config["userinfo_endpoint"]
         super().__init__(client_id, client_secret, code=code, scope=scope, redirect_uri=redirect_uri, **kwargs)
 
-    def _fetch_openid_config(self):
+    def _fetch_openid_config(self) -> dict:
         r = httpx.get(f"https://{self.domain}/.well-known/openid-configuration")
         r.raise_for_status()
         return r.json()
 
-    def login_link(self, req):
+    def login_link(self, req) -> str:
         d = dict(response_type="code", client_id=self.client_id, scope=self.scope, redirect_uri=redir_url(req, self.redirect_uri))
         return f"{self.base_url}?{urlencode(d)}"
 
@@ -118,22 +118,22 @@ class AppleAppClient(_AppClient):
     base_url = "https://appleid.apple.com/auth/authorize"
     token_url = "https://appleid.apple.com/auth/token"
     
-    def __init__(self, client_id, key_id, team_id, private_key, code=None, scope=None, **kwargs):
+    def __init__(self, client_id, key_id, team_id, private_key, code=None, scope=None, **kwargs) -> None:
         if not scope: scope = ["name", "email"]
         super().__init__(client_id, client_secret=None, code=code, scope=scope, **kwargs)
         self.key_id, self.team_id, self.private_key = key_id, team_id, private_key
     
     @property
-    def client_secret(self):
+    def client_secret(self) -> str:
         import jwt
         now = int(time.time())
         payload = dict(iss=self.team_id, iat=now, exp=now + 86400 * 180, aud='https://appleid.apple.com', sub=self.client_id)
         return jwt.encode(payload, self.private_key, algorithm='ES256', headers={'kid': self.key_id})
     
     @client_secret.setter
-    def client_secret(self, value): pass
+    def client_secret(self, value) -> None: pass
     
-    def get_info(self, token=None):
+    def get_info(self, token=None) -> dict:
         "Decode user info from the ID token"
         import jwt
         if token: self.token = token
@@ -141,20 +141,20 @@ class AppleAppClient(_AppClient):
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def login_link(self:WebApplicationClient, redirect_uri, scope=None, state=None, **kwargs):
+def login_link(self:WebApplicationClient, redirect_uri: str, scope: str | list | None = None, state: str | None = None, **kwargs) -> str:
     "Get a login link for this client"
     if not scope: scope=self.scope
     if not state: state=getattr(self, 'state', None)
     return self.prepare_request_uri(self.base_url, redirect_uri, scope, state=state, **kwargs)
 
 # %% ../nbs/api/08_oauth.ipynb
-def get_host(request):
+def get_host(request: Request) -> str:
     """Get the host, preferring X-Forwarded-Host if available"""
     forwarded_host = request.headers.get('x-forwarded-host')
     return forwarded_host if forwarded_host else request.url.netloc
 
 # %% ../nbs/api/08_oauth.ipynb
-def redir_url(req, redir_path, scheme=None):
+def redir_url(req: Request, redir_path: str, scheme: str | None = None) -> str:
     "Get the redir url for the host in `request`"
     host = get_host(req)
     scheme = 'http' if host.split(':')[0] in ("localhost", "127.0.0.1") else 'https'
@@ -162,7 +162,7 @@ def redir_url(req, redir_path, scheme=None):
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def parse_response(self:_AppClient, code, redirect_uri):
+def parse_response(self:_AppClient, code: str, redirect_uri: str) -> None:
     "Get the token from the oauth2 server response"
     payload = dict(code=code, redirect_uri=redirect_uri, client_id=self.client_id,
                    client_secret=self.client_secret, grant_type='authorization_code')
@@ -172,7 +172,7 @@ def parse_response(self:_AppClient, code, redirect_uri):
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def get_info(self:_AppClient, token=None):
+def get_info(self:_AppClient, token: str | None = None) -> dict:
     "Get the info for authenticated user"
     if not token: token = self.token["access_token"]
     headers = {'Authorization': f'Bearer {token}'}
@@ -180,25 +180,25 @@ def get_info(self:_AppClient, token=None):
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def retr_info(self:_AppClient, code, redirect_uri):
+def retr_info(self:_AppClient, code: str, redirect_uri: str) -> dict:
     "Combines `parse_response` and `get_info`"
     self.parse_response(code, redirect_uri)
     return self.get_info()
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def retr_id(self:_AppClient, code, redirect_uri):
+def retr_id(self:_AppClient, code: str, redirect_uri: str):
     "Call `retr_info` and then return id/subscriber value"
     return self.retr_info(code, redirect_uri)[self.id_key]
 
 # %% ../nbs/api/08_oauth.ipynb
 http_patterns = (r'^(localhost|127\.0\.0\.1)(:\d+)?$',)
-def url_match(request, patterns=http_patterns):
+def url_match(request: Request, patterns: tuple = http_patterns) -> bool:
     return any(re.match(pattern, get_host(request).split(':')[0]) for pattern in patterns)
 
 # %% ../nbs/api/08_oauth.ipynb
 class OAuth:
-    def __init__(self, app, cli, skip=None, redir_path='/redirect', error_path='/error', logout_path='/logout', login_path='/login', https=True, http_patterns=http_patterns, redir_method='get'):
+    def __init__(self, app: FastHTML, cli: _AppClient, skip: list | None = None, redir_path: str = '/redirect', error_path: str = '/error', logout_path: str = '/logout', login_path: str = '/login', https: bool = True, http_patterns: tuple = http_patterns, redir_method: str = 'get') -> None:
         if not skip: skip = [redir_path,error_path,login_path]
         redir_handler = app.post if redir_method == 'post' else app.get
         store_attr()
@@ -231,14 +231,14 @@ class OAuth:
             return self.logout(session)
 
     def redir_login(self, session): return RedirectResponse(self.login_path, status_code=303)
-    def redir_url(self, req):
+    def redir_url(self, req: Request) -> str:
         scheme = 'http' if url_match(req,self.http_patterns) or not self.https else 'https'
         return redir_url(req, self.redir_path, scheme)
 
-    def login_link(self, req, scope=None, state=None): return self.cli.login_link(self.redir_url(req), scope=scope, state=state)
-    def check_invalid(self, req, session, auth): return False
-    def logout(self, session): return self.redir_login(session)
-    def get_auth(self, info, ident, session, state): raise NotImplementedError()
+    def login_link(self, req: Request, scope: str | list | None = None, state: str | None = None) -> str: return self.cli.login_link(self.redir_url(req), scope=scope, state=state)
+    def check_invalid(self, req: Request, session: dict, auth) -> bool: return False
+    def logout(self, session: dict): return self.redir_login(session)
+    def get_auth(self, info: dict, ident, session: dict, state): raise NotImplementedError()
 
 # %% ../nbs/api/08_oauth.ipynb
 try:
@@ -250,7 +250,7 @@ except ImportError:
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch()
-def consent_url(self:GoogleAppClient, proj=None):
+def consent_url(self:GoogleAppClient, proj=None) -> str:
     "Get Google OAuth consent screen URL"
     loc = "https://console.cloud.google.com/auth/clients"
     if proj is None: proj=self.project_id
@@ -258,25 +258,25 @@ def consent_url(self:GoogleAppClient, proj=None):
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def update(self:Credentials):
+def update(self:Credentials) -> 'Credentials':
     "Refresh the credentials if they are expired, and return them"
     if self.expired: self.refresh(Request())
     return self
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def save(self:Credentials, fname):
+def save(self:Credentials, fname: str) -> None:
     "Save credentials to `fname`"
     save_pickle(fname, self)
 
 # %% ../nbs/api/08_oauth.ipynb
-def load_creds(fname):
+def load_creds(fname: str) -> Credentials:
     "Load credentials from `fname`"
     return load_pickle(fname).update()
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def creds(self:GoogleAppClient):
+def creds(self:GoogleAppClient) -> Credentials:
     "Create `Credentials` from the client, refreshing if needed"
     return Credentials(token=self.access_token, refresh_token=self.refresh_token, 
         token_uri=self.token_url, client_id=self.client_id,

@@ -19,7 +19,7 @@ __all__ = ['named', 'html_attrs', 'hx_attrs', 'hx_evts', 'js_evts', 'hx_attrs_an
 # %% ../nbs/api/01_components.ipynb
 from dataclasses import dataclass, asdict, is_dataclass, make_dataclass, replace, astuple, MISSING
 from bs4 import BeautifulSoup, Comment
-from typing import Literal, Mapping, Optional
+from typing import Any, Callable, Literal, Mapping, Optional
 
 from fastcore.utils import *
 from fastcore.xml import *
@@ -34,15 +34,15 @@ except ImportError: display=None
 
 # %% ../nbs/api/01_components.ipynb
 @patch
-def __str__(self:FT): return self.id if self.id else to_xml(self, indent=False)
+def __str__(self:FT) -> str: return self.id if self.id else to_xml(self, indent=False)
 
 # %% ../nbs/api/01_components.ipynb
 @patch
-def __radd__(self:FT, b): return f'{b}{self}'
+def __radd__(self:FT, b) -> str: return f'{b}{self}'
 
 # %% ../nbs/api/01_components.ipynb
 @patch
-def __add__(self:FT, b): return f'{self}{b}'
+def __add__(self:FT, b) -> str: return f'{self}{b}'
 
 # %% ../nbs/api/01_components.ipynb
 named = set('a button form frame iframe img input map meta object param select textarea'.split())
@@ -71,7 +71,7 @@ js_evt_attrs = ['hx_on_'+o for o in js_evts.split()]
 evt_attrs = js_evt_attrs+hx_evt_attrs
 
 # %% ../nbs/api/01_components.ipynb
-def attrmap_x(o):
+def attrmap_x(o: str) -> str:
     if o.startswith('_at_'): o = '@'+o[4:]
     return attrmap(o)
 
@@ -83,7 +83,7 @@ fh_cfg['auto_id']=False
 fh_cfg['auto_name']=True
 
 # %% ../nbs/api/01_components.ipynb
-def ft_html(tag: str, *c, id=None, cls=None, title=None, style=None, attrmap=None, valmap=None, ft_cls=None, **kwargs):
+def ft_html(tag: str, *c, id: str | bool | None = None, cls: str | None = None, title: str | None = None, style: str | None = None, attrmap: Callable | None = None, valmap: Callable | None = None, ft_cls: type | None = None, **kwargs) -> FT:
     ds,c = partition(c, risinstance(Mapping))
     for d in ds: kwargs = {**kwargs, **d}
     if ft_cls is None: ft_cls = fh_cfg.ft_cls
@@ -99,7 +99,7 @@ def ft_html(tag: str, *c, id=None, cls=None, title=None, style=None, attrmap=Non
 
 # %% ../nbs/api/01_components.ipynb
 @use_kwargs(hx_attrs+evt_attrs, keep=True)
-def ft_hx(tag: str, *c, target_id=None, hx_vals=None, hx_target=None, **kwargs):
+def ft_hx(tag: str, *c, target_id: str | None = None, hx_vals: dict | str | None = None, hx_target: str | FT | None = None, **kwargs) -> FT:
     if hx_vals: kwargs['hx_vals'] = json.dumps(hx_vals) if isinstance (hx_vals,dict) else hx_vals
     if hx_target: kwargs['hx_target'] = '#'+hx_target.id if isinstance(hx_target,FT) else hx_target
     if target_id: kwargs['hx_target'] = '#'+target_id
@@ -120,12 +120,12 @@ _all_ = [
 for o in _all_: _g[o] = partial(ft_hx, o.lower())
 
 # %% ../nbs/api/01_components.ipynb
-def File(fname):
+def File(fname: str) -> NotStr:
     "Use the unescaped text in file `fname` directly"
     return NotStr(Path(fname).read_text())
 
 # %% ../nbs/api/01_components.ipynb
-def show(ft, *rest, iframe=False, height='auto', style=None):
+def show(ft: FT | str, *rest, iframe: bool = False, height: str = 'auto', style: str | None = None) -> None:
     "Renders FT Components into HTML within a Jupyter notebook."
     if isinstance(ft, str): ft = Safe(ft)
     if rest: ft = (ft,)+rest
@@ -169,20 +169,20 @@ def _fill_item(item, obj):
     return FT(tag,cs,attr,void_=item.void_)
 
 # %% ../nbs/api/01_components.ipynb
-def fill_form(form:FT, obj)->FT:
+def fill_form(form: FT, obj: Any) -> FT:
     "Fills named items in `form` using attributes in `obj`"
     if is_dataclass(obj): obj = asdict(obj)
     elif not isinstance(obj,dict): obj = obj.__dict__
     return _fill_item(form, obj)
 
 # %% ../nbs/api/01_components.ipynb
-def fill_dataclass(src, dest):
+def fill_dataclass(src: Any, dest: Any) -> Any:
     "Modifies dataclass in-place and returns it"
     for nm,val in asdict(src).items(): setattr(dest, nm, val)
     return dest
 
 # %% ../nbs/api/01_components.ipynb
-def find_inputs(e, tags='input', **kw):
+def find_inputs(e: FT | list | tuple, tags: str | list[str] | None = 'input', **kw) -> list[FT]:
     "Recursively find all elements in `e` with `tags` and attrs matching `kw`"
     if not isinstance(e, (list,tuple,FT)): return []
     inputs = []
@@ -196,7 +196,7 @@ def find_inputs(e, tags='input', **kw):
     return inputs
 
 # %% ../nbs/api/01_components.ipynb
-def __getattr__(tag):
+def __getattr__(tag: str):
     if tag.startswith('_') or tag[0].islower(): raise AttributeError
     tag = tag.replace("_", "-")
     def _f(*c, target_id=None, **kwargs): return ft_hx(tag, *c, target_id=target_id, **kwargs)
@@ -204,7 +204,7 @@ def __getattr__(tag):
 
 # %% ../nbs/api/01_components.ipynb
 _re_h2x_attr_key = re.compile(r'^[A-Za-z_-][\w-]*$')
-def html2ft(html, attr1st=False):
+def html2ft(html: str, attr1st: bool = False) -> str:
     """Convert HTML to an `ft` expression"""
     rev_map = {'class': 'cls', 'for': 'fr'}
 
@@ -244,7 +244,7 @@ def html2ft(html, attr1st=False):
     return _parse(soup, 1)
 
 # %% ../nbs/api/01_components.ipynb
-def sse_message(elm, event='message'):
+def sse_message(elm: FT, event: str = 'message') -> str:
     "Convert element `elm` into a format suitable for SSE streaming"
     data = '\n'.join(f'data: {o}' for o in to_xml(elm).splitlines())
     return f'event: {event}\n{data}\n\n'
