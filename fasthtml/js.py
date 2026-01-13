@@ -15,14 +15,14 @@ from fasthtml.xtend import *
 # %% ../nbs/api/03_js.ipynb
 def light_media(
         css: str # CSS to be included in the light media query
-    ):
+    ) -> FT:
     "Render light media for day mode views"
     return Style('@media (prefers-color-scheme: light) {%s}' %css)
 
 # %% ../nbs/api/03_js.ipynb
 def dark_media(
         css: str # CSS to be included in the dark media query
-    ):
+    ) -> FT:
     "Render dark media for night mode views"
     return Style('@media (prefers-color-scheme:  dark) {%s}' %css)
 
@@ -33,19 +33,19 @@ npmcdn = 'https://cdn.jsdelivr.net/npm/'
 
 # %% ../nbs/api/03_js.ipynb
 def MarkdownJS(
-        sel='.marked' # CSS selector for markdown elements
-    ):
+        sel: str = '.marked' # CSS selector for markdown elements
+    ) -> FT:
     "Implements browser-based markdown rendering."
     src = "proc_htmx('%s', e => e.innerHTML = marked.parse(e.textContent));" % sel
     return Script(marked_imp+src, type='module')
 
 # %% ../nbs/api/03_js.ipynb
 def KatexMarkdownJS(
-        sel='.marked',  # CSS selector for markdown elements
-        inline_delim='$',  # Delimiter for inline math
-        display_delim='$$',  # Delimiter for long math
-        math_envs=None  # List of environments to render as display math
-    ):
+        sel: str = '.marked',  # CSS selector for markdown elements
+        inline_delim: str = '$',  # Delimiter for inline math
+        display_delim: str = '$$',  # Delimiter for long math
+        math_envs: list[str] | None = None  # List of environments to render as display math
+    ) -> tuple[FT, FT]:
     math_envs = math_envs or ['equation', 'align', 'gather', 'multline']
     env_list = '[' + ','.join(f"'{env}'" for env in math_envs) + ']'
     fn = Path(__file__).parent/'katex.js'
@@ -56,11 +56,11 @@ def KatexMarkdownJS(
 
 # %% ../nbs/api/03_js.ipynb
 def HighlightJS(
-        sel='pre code:not([data-highlighted="yes"])', # CSS selector for code elements. Default is industry standard, be careful before adjusting it
-        langs:str|list|tuple='python',  # Language(s) to highlight
-        light='atom-one-light',  # Light theme
-        dark='atom-one-dark'  # Dark theme
-    ):
+        sel: str = 'pre code:not([data-highlighted="yes"])', # CSS selector for code elements. Default is industry standard, be careful before adjusting it
+        langs: str | list | tuple = 'python',  # Language(s) to highlight
+        light: str = 'atom-one-light',  # Light theme
+        dark: str = 'atom-one-dark'  # Dark theme
+    ) -> list[FT]:
     "Implements browser-based syntax highlighting. Usage example [here](/tutorials/quickstart_for_web_devs.html#code-highlighting)."
     src = """
 hljs.addPlugin(new CopyButtonPlugin());
@@ -79,9 +79,9 @@ htmx.onLoad(hljs.highlightAll);""" % sel
 
 # %% ../nbs/api/03_js.ipynb
 def SortableJS(
-        sel='.sortable',  # CSS selector for sortable elements
-        ghost_class='blue-background-class'  # When an element is being dragged, this is the class used to distinguish it from the rest
-    ):
+        sel: str = '.sortable',  # CSS selector for sortable elements
+        ghost_class: str = 'blue-background-class'  # When an element is being dragged, this is the class used to distinguish it from the rest
+    ) -> FT:
     src = """
 import {Sortable} from 'https://cdn.jsdelivr.net/npm/sortablejs/+esm';
 proc_htmx('%s', Sortable.create);
@@ -90,9 +90,9 @@ proc_htmx('%s', Sortable.create);
 
 # %% ../nbs/api/03_js.ipynb
 def MermaidJS(
-        sel='.language-mermaid',  # CSS selector for mermaid elements
-        theme='base',  # Mermaid theme to use
-    ):
+        sel: str = '.language-mermaid',  # CSS selector for mermaid elements
+        theme: str = 'base',  # Mermaid theme to use
+    ) -> FT:
     "Implements browser-based Mermaid diagram rendering."
     src = """
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';

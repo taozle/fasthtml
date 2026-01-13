@@ -12,7 +12,7 @@ import json
 
 # %% ../nbs/api/09_cli.ipynb
 @call_parse
-def railway_link():
+def railway_link() -> None:
     "Link the current directory to the current project's Railway service"
     j = json.loads(check_output("railway status --json".split()))
     prj = j['id']
@@ -24,7 +24,7 @@ def railway_link():
     res = check_output(cmd.split())
 
 # %% ../nbs/api/09_cli.ipynb
-def _run(a, **kw):
+def _run(a: list[str], **kw) -> None:
     print('#', ' '.join(a))
     run(a)
 
@@ -33,7 +33,7 @@ def _run(a, **kw):
 def railway_deploy(
     name:str, # The project name to deploy
     mount:bool_arg=True # Create a mounted volume at /app/data?
-):
+) -> None:
     """Deploy a FastHTML app to Railway"""
     nm,ver = check_output("railway --version".split()).decode().split()
     assert nm.startswith('railway'), f'Unexpected railway version string: {nm}'

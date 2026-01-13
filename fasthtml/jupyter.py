@@ -18,7 +18,7 @@ try: from IPython.display import HTML,Markdown,display
 except ImportError: pass
 
 # %% ../nbs/api/06_jupyter.ipynb
-def nb_serve(app, log_level="error", port=8000, host='0.0.0.0', **kwargs):
+def nb_serve(app, log_level="error", port=8000, host='0.0.0.0', **kwargs) -> uvicorn.Server:
     "Start a Jupyter compatible uvicorn server with ASGI `app` on `port` with `log_level`"
     server = uvicorn.Server(uvicorn.Config(app, log_level=log_level, host=host, port=port, **kwargs))
     async def async_run_server(server): await server.serve()
@@ -28,7 +28,7 @@ def nb_serve(app, log_level="error", port=8000, host='0.0.0.0', **kwargs):
     return server
 
 # %% ../nbs/api/06_jupyter.ipynb
-async def nb_serve_async(app, log_level="error", port=8000, host='0.0.0.0', **kwargs):
+async def nb_serve_async(app, log_level="error", port=8000, host='0.0.0.0', **kwargs) -> uvicorn.Server:
     "Async version of `nb_serve`"
     server = uvicorn.Server(uvicorn.Config(app, log_level=log_level, host=host, port=port, **kwargs))
     asyncio.get_running_loop().create_task(server.serve())
@@ -36,7 +36,7 @@ async def nb_serve_async(app, log_level="error", port=8000, host='0.0.0.0', **kw
     return server
 
 # %% ../nbs/api/06_jupyter.ipynb
-def is_port_free(port, host='localhost'):
+def is_port_free(port, host='localhost') -> bool:
     "Check if `port` is free on `host`"
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -47,7 +47,7 @@ def is_port_free(port, host='localhost'):
     finally: sock.close()
 
 # %% ../nbs/api/06_jupyter.ipynb
-def wait_port_free(port, host='localhost', max_wait=3):
+def wait_port_free(port, host='localhost', max_wait=3) -> None:
     "Wait for `port` to be free on `host`"
     start_time = time.time()
     while not is_port_free(port):
@@ -56,13 +56,13 @@ def wait_port_free(port, host='localhost', max_wait=3):
 
 # %% ../nbs/api/06_jupyter.ipynb
 @delegates(_show)
-def show(*s, **kwargs):
+def show(*s, **kwargs) -> None:
     "Same as fasthtml.components.show, but also adds `htmx.process()`"
     if IN_NOTEBOOK: return _show(*s, Script('if (window.htmx) htmx.process(document.body)'), **kwargs)
     return _show(*s, **kwargs)
 
 # %% ../nbs/api/06_jupyter.ipynb
-def render_ft(**kw):
+def render_ft(**kw) -> None:
     "Call once in a notebook or solveit dialog to auto-render components with HTMX support"
     @patch
     def _repr_html_(self:FT):
@@ -70,7 +70,7 @@ def render_ft(**kw):
         return to_xml(Div(self, scr_proc, **kw))
 
 # %% ../nbs/api/06_jupyter.ipynb
-def htmx_config_port(port=8000):
+def htmx_config_port(port=8000) -> None:
     display(HTML('''
 <script>
 document.body.addEventListener('htmx:configRequest', (event) => {
@@ -83,33 +83,33 @@ document.body.addEventListener('htmx:configRequest', (event) => {
 # %% ../nbs/api/06_jupyter.ipynb
 class JupyUvi:
     "Start and stop a Jupyter compatible uvicorn server with ASGI `app` on `port` with `log_level`"
-    def __init__(self, app, log_level="error", host='0.0.0.0', port=8000, start=True, **kwargs):
+    def __init__(self, app, log_level="error", host='0.0.0.0', port=8000, start=True, **kwargs) -> None:
         self.kwargs = kwargs
         store_attr(but='start')
         self.server = None
         if start: self.start()
         if not os.environ.get('IN_SOLVEIT'): htmx_config_port(port)
 
-    def start(self):
+    def start(self) -> None:
         self.server = nb_serve(self.app, log_level=self.log_level, host=self.host, port=self.port, **self.kwargs)
 
-    async def start_async(self):
+    async def start_async(self) -> None:
         self.server = await nb_serve_async(self.app, log_level=self.log_level, host=self.host, port=self.port, **self.kwargs)
 
-    def stop(self):
+    def stop(self) -> None:
         self.server.should_exit = True
         wait_port_free(self.port)
 
 # %% ../nbs/api/06_jupyter.ipynb
 class JupyUviAsync(JupyUvi):
     "Start and stop an async Jupyter compatible uvicorn server with ASGI `app` on `port` with `log_level`"
-    def __init__(self, app, log_level="error", host='0.0.0.0', port=8000, **kwargs):
+    def __init__(self, app, log_level="error", host='0.0.0.0', port=8000, **kwargs) -> None:
         super().__init__(app, log_level=log_level, host=host, port=port, start=False, **kwargs)
 
-    async def start(self):
+    async def start(self) -> None:
         self.server = await nb_serve_async(self.app, log_level=self.log_level, host=self.host, port=self.port, **self.kwargs)
 
-    def stop(self):
+    def stop(self) -> None:
         self.server.should_exit = True
         wait_port_free(self.port)
 
@@ -118,7 +118,7 @@ from starlette.testclient import TestClient
 from html import escape
 
 # %% ../nbs/api/06_jupyter.ipynb
-def HTMX(path="/", host='localhost', app=None, port=8000, height="auto", link=False, iframe=True):
+def HTMX(path="/", host='localhost', app=None, port=8000, height="auto", link=False, iframe=True) -> HTML | None:
     "An iframe which displays the HTMX application in a notebook."
     if isinstance(height, int): height = f"{height}px"
     scr = """{
@@ -143,7 +143,7 @@ def HTMX(path="/", host='localhost', app=None, port=8000, height="auto", link=Fa
         return HTML(f'<iframe {src} style="width: 100%; height: {height}; border: none;" onload="{scr}" ' + """allow="accelerometer; autoplay; camera; clipboard-read; clipboard-write; display-capture; encrypted-media; fullscreen; gamepad; geolocation; gyroscope; hid; identity-credentials-get; idle-detection; magnetometer; microphone; midi; payment; picture-in-picture; publickey-credentials-get; screen-wake-lock; serial; usb; web-share; xr-spatial-tracking"></iframe> """)
 
 # %% ../nbs/api/06_jupyter.ipynb
-def ws_client(app, nm='', host='localhost', port=8000, ws_connect='/ws', frame=True, link=True, **kwargs):
+def ws_client(app, nm='', host='localhost', port=8000, ws_connect='/ws', frame=True, link=True, **kwargs) -> FT:
     path = f'/{nm}'
     c = Main('', cls="container", id=unqid())
     @app.get(path)

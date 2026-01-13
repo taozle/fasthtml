@@ -27,7 +27,7 @@ picocondlink = (Link(rel="stylesheet", href=picocondcss),
                 Style(":root { --pico-font-size: 100%; }"))
 
 # %% ../nbs/api/04_pico.ipynb
-def set_pico_cls():
+def set_pico_cls() -> Any:
     js = """var sel = '.cell-output, .output_area';
 document.querySelectorAll(sel).forEach(e => e.classList.add('pico'));
 
@@ -46,7 +46,7 @@ new MutationObserver(ms => {
 
 # %% ../nbs/api/04_pico.ipynb
 @delegates(ft_hx, keep=True)
-def Card(*c, header=None, footer=None, **kwargs)->FT:
+def Card(*c, header=None, footer=None, **kwargs) -> FT:
     "A PicoCSS Card, implemented as an Article with optional Header and Footer"
     if header: c = (Header(header),) + c
     if footer: c += (Footer(footer),)
@@ -54,37 +54,37 @@ def Card(*c, header=None, footer=None, **kwargs)->FT:
 
 # %% ../nbs/api/04_pico.ipynb
 @delegates(ft_hx, keep=True)
-def Group(*c, **kwargs)->FT:
+def Group(*c, **kwargs) -> FT:
     "A PicoCSS Group, implemented as a Fieldset with role 'group'"
     return Fieldset(*c, role="group", **kwargs)
 
 # %% ../nbs/api/04_pico.ipynb
 @delegates(ft_hx, keep=True)
-def Search(*c, **kwargs)->FT:
+def Search(*c, **kwargs) -> FT:
     "A PicoCSS Search, implemented as a Form with role 'search'"
     return Form(*c, role="search", **kwargs)
 
 # %% ../nbs/api/04_pico.ipynb
 @delegates(ft_hx, keep=True)
-def Grid(*c, cls='grid', **kwargs)->FT:
+def Grid(*c, cls: str = 'grid', **kwargs) -> FT:
     "A PicoCSS Grid, implemented as child Divs in a Div with class 'grid'"
     c = tuple(o if isinstance(o,list) else Div(o) for o in c)
     return ft_hx('div', *c, cls=cls, **kwargs)
 
 # %% ../nbs/api/04_pico.ipynb
 @delegates(ft_hx, keep=True)
-def DialogX(*c, open=None, header=None, footer=None, id=None, **kwargs)->FT:
+def DialogX(*c, open=None, header=None, footer=None, id: str | None = None, **kwargs) -> FT:
     "A PicoCSS Dialog, with children inside a Card"
     card = Card(*c, header=header, footer=footer, **kwargs)
     return Dialog(card, open=open, id=id)
 
 # %% ../nbs/api/04_pico.ipynb
 @delegates(ft_hx, keep=True)
-def Container(*args, **kwargs)->FT:
+def Container(*args, **kwargs) -> FT:
     "A PicoCSS Container, implemented as a Main with class 'container'"
     return Main(*args, cls="container", **kwargs)
 
 # %% ../nbs/api/04_pico.ipynb
-def PicoBusy():
+def PicoBusy() -> FT:
     return (HtmxOn('beforeRequest', "event.detail.elt.setAttribute('aria-busy', 'true' )"),
             HtmxOn('afterRequest',  "event.detail.elt.setAttribute('aria-busy', 'false')"))

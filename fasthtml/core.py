@@ -42,12 +42,12 @@ def _params(f): return signature_ex(f, True).parameters
 empty = Parameter.empty
 
 # %% ../nbs/api/00_core.ipynb
-def parsed_date(s:str):
+def parsed_date(s:str) -> datetime:
     "Convert `s` to a datetime"
     return dtparse.parse(s)
 
 # %% ../nbs/api/00_core.ipynb
-def snake2hyphens(s:str):
+def snake2hyphens(s:str) -> str:
     "Convert `s` from snake case to hyphenated and capitalised"
     s = snake2camel(s)
     return camel2words(s, '-')
@@ -113,7 +113,7 @@ htmx_resps = dict(location=None, push_url=None, redirect=None, refresh=None, rep
 
 # %% ../nbs/api/00_core.ipynb
 @use_kwargs_dict(**htmx_resps)
-def HtmxResponseHeaders(**kwargs):
+def HtmxResponseHeaders(**kwargs) -> HttpHeader | tuple[HttpHeader, ...]:
     "HTMX response headers"
     res = tuple(HttpHeader(_to_htmx_header(k), v) for k,v in kwargs.items())
     return res[0] if len(res)==1 else res
@@ -216,7 +216,7 @@ async def _wrap_req(req, params):
     return {arg:await _find_p(req, arg, p) for arg,p in params.items()}
 
 # %% ../nbs/api/00_core.ipynb
-def flat_xt(lst):
+def flat_xt(lst) -> tuple:
     "Flatten lists"
     result = []
     if isinstance(lst,(FT,str)): lst=[lst]
@@ -227,7 +227,7 @@ def flat_xt(lst):
 
 # %% ../nbs/api/00_core.ipynb
 class Beforeware:
-    def __init__(self, f, skip=None): self.f,self.skip = f,skip or []
+    def __init__(self, f, skip=None) -> None: self.f,self.skip = f,skip or []
 
 # %% ../nbs/api/00_core.ipynb
 async def _handle(f, *args, **kwargs):
@@ -289,12 +289,12 @@ def _ws_endp(recv, conn=None, disconn=None):
     return cls
 
 # %% ../nbs/api/00_core.ipynb
-def EventStream(s):
+def EventStream(s) -> StreamingResponse:
     "Create a text/event-stream response from `s`"
     return StreamingResponse(s, media_type="text/event-stream")
 
 # %% ../nbs/api/00_core.ipynb
-def signal_shutdown():
+def signal_shutdown() -> asyncio.Event:
     from uvicorn.main import Server
     event = asyncio.Event()
     @patch
@@ -305,12 +305,12 @@ def signal_shutdown():
     return event
 
 # %% ../nbs/api/00_core.ipynb
-def uri(_arg, **kwargs):
+def uri(_arg, **kwargs) -> str:
     "Create a URI by URL-encoding `_arg` and appending query parameters from `kwargs`"
     return f"{quote(_arg)}/{urlencode(kwargs, doseq=True)}"
 
 # %% ../nbs/api/00_core.ipynb
-def decode_uri(s):
+def decode_uri(s) -> tuple:
     "Decode a URI created by `uri()` back into argument and keyword dict"
     arg,_,kw = s.partition('/')
     return unquote(arg), {k:v[0] for k,v in parse_qs(kw).items()}
@@ -372,7 +372,7 @@ def _to_xml(req, resp, indent):
 _iter_typs = (tuple,list,map,filter,range,types.GeneratorType)
 
 # %% ../nbs/api/00_core.ipynb
-def flat_tuple(o):
+def flat_tuple(o) -> tuple:
     "Flatten nested iterables into a single tuple"
     result = []
     if not isinstance(o,_iter_typs): o=[o]
@@ -388,7 +388,7 @@ def noop_body(c, req):
     return c
 
 # %% ../nbs/api/00_core.ipynb
-def respond(req, heads, bdy):
+def respond(req, heads, bdy) -> FT:
     "Default FT response creation function"
     body_wrap = getattr(req, 'body_wrap', noop_body)
     params = inspect.signature(body_wrap).parameters
@@ -397,7 +397,7 @@ def respond(req, heads, bdy):
     return Html(Head(*heads, *flat_xt(req.hdrs)), body, **req.htmlkw)
 
 # %% ../nbs/api/00_core.ipynb
-def is_full_page(req, resp):
+def is_full_page(req, resp) -> bool:
     "Check if response should be rendered as full page or fragment"
     if resp and any(getattr(o, 'tag', '')=='html' for o in resp): return True
     return 'hx-request' in req.headers and 'hx-history-restore-request' not in req.headers
@@ -463,8 +463,8 @@ def _resp(req, resp, cls=empty, status_code=200):
 # %% ../nbs/api/00_core.ipynb
 class Redirect:
     "Use HTMX or Starlette RedirectResponse as required to redirect to `loc`"
-    def __init__(self, loc): self.loc = loc
-    def __response__(self, req):
+    def __init__(self, loc) -> None: self.loc = loc
+    def __response__(self, req) -> Response:
         if 'hx-request' in req.headers: return HtmxResponseHeaders(redirect=self.loc)
         return RedirectResponse(self.loc, status_code=303)
 
@@ -498,7 +498,7 @@ viewport  = Meta(name="viewport", content="width=device-width, initial-scale=1, 
 charset   = Meta(charset="utf-8")
 
 # %% ../nbs/api/00_core.ipynb
-def get_key(key=None, fname='.sesskey'):
+def get_key(key=None, fname='.sesskey') -> str:
     "Get session key from `key` param or read/create from file `fname`"
     if key: return key
     fname = Path(fname)
@@ -535,7 +535,7 @@ def qp(p:str, **kw) -> str:
     return p + ('?' + urlencode({k:'' if v in (False,None) else v for k,v in kw.items()},doseq=True) if kw else '')
 
 # %% ../nbs/api/00_core.ipynb
-def def_hdrs(htmx=True, surreal=True):
+def def_hdrs(htmx=True, surreal=True) -> list:
     "Default headers for a FastHTML app"
     hdrs = []
     if surreal: hdrs = [surrsrc,scopesrc] + hdrs
@@ -594,7 +594,7 @@ class FastHTML(Starlette):
 
 # %% ../nbs/api/00_core.ipynb
 @patch
-def add_route(self:FastHTML, route):
+def add_route(self:FastHTML, route) -> None:
     "Add or replace a route in the FastHTML app"
     route.methods = [m.upper() for m in listify(route.methods)]
     self.router.routes = [r for r in self.router.routes if not
@@ -663,7 +663,7 @@ def _mk_locfunc(f, p, app=None):
     return _lf()
 
 # %% ../nbs/api/00_core.ipynb
-def nested_name(f):
+def nested_name(f) -> str:
     "Get name of function `f` using '_' to join nested function names"
     return f.__qualname__.replace('.<locals>.', '_')
 
@@ -694,7 +694,7 @@ for o in all_meths: setattr(FastHTML, o, partialmethod(FastHTML.route, methods=o
 
 # %% ../nbs/api/00_core.ipynb
 @patch
-def set_lifespan(self:FastHTML, value):
+def set_lifespan(self:FastHTML, value) -> None:
     "Set the lifespan context manager for the FastHTML app"
     if inspect.isasyncgenfunction(value): value = contextlib.asynccontextmanager(value)
     self.router.lifespan_context = value
@@ -725,7 +725,7 @@ def serve(
 # %% ../nbs/api/00_core.ipynb
 class Client:
     "A simple httpx ASGI client that doesn't require `async`"
-    def __init__(self, app, url="http://testserver"):
+    def __init__(self, app, url="http://testserver") -> None:
         self.cli = httpx.AsyncClient(transport=httpx.ASGITransport(app), base_url=url)
 
     def _sync(self, method, url, **kwargs):
@@ -736,13 +736,13 @@ for o in ('get', 'post', 'delete', 'put', 'patch', 'options'): setattr(Client, o
 
 # %% ../nbs/api/00_core.ipynb
 class RouteFuncs:
-    def __init__(self): super().__setattr__('_funcs', {})
-    def __setattr__(self, name, value): self._funcs[name] = value
+    def __init__(self) -> None: super().__setattr__('_funcs', {})
+    def __setattr__(self, name, value) -> None: self._funcs[name] = value
     def __getattr__(self, name):
         if name in all_meths: raise AttributeError("Route functions with HTTP Names are not accessible here")
         try: return self._funcs[name]
         except KeyError: raise AttributeError(f"No route named {name} found in route functions")
-    def __dir__(self): return list(self._funcs.keys())
+    def __dir__(self) -> list: return list(self._funcs.keys())
 
 # %% ../nbs/api/00_core.ipynb
 class APIRouter:
@@ -788,7 +788,7 @@ class APIRouter:
 for o in all_meths: setattr(APIRouter, o, partialmethod(APIRouter.__call__, methods=o))
 
 # %% ../nbs/api/00_core.ipynb
-def cookie(key: str, value="", max_age=None, expires=None, path="/", domain=None, secure=False, httponly=False, samesite="lax",):
+def cookie(key: str, value="", max_age=None, expires=None, path="/", domain=None, secure=False, httponly=False, samesite="lax",) -> HttpHeader:
     "Create a 'set-cookie' `HttpHeader`"
     cookie = cookies.SimpleCookie()
     cookie[key] = value
@@ -806,7 +806,7 @@ def cookie(key: str, value="", max_age=None, expires=None, path="/", domain=None
     return HttpHeader("set-cookie", cookie_val)
 
 # %% ../nbs/api/00_core.ipynb
-def reg_re_param(m, s):
+def reg_re_param(m, s) -> None:
     cls = get_class(f'{m}Conv', sup=StringConvertor, regex=s)
     register_url_convertor(m, cls())
 
@@ -817,21 +817,21 @@ _static_exts = "ico gif jpg jpeg webm css js woff png svg mp4 webp ttf otf eot w
 reg_re_param("static", '|'.join(_static_exts))
 
 @patch
-def static_route_exts(self:FastHTML, prefix='/', static_path='.', exts='static'):
+def static_route_exts(self:FastHTML, prefix='/', static_path='.', exts='static') -> None:
     "Add a static route at URL path `prefix` with files from `static_path` and `exts` defined by `reg_re_param()`"
     @self.route(f"{prefix}{{fname:path}}.{{ext:{exts}}}")
     async def get(fname:str, ext:str): return FileResponse(f'{static_path}/{fname}.{ext}')
 
 # %% ../nbs/api/00_core.ipynb
 @patch
-def static_route(self:FastHTML, ext='', prefix='/', static_path='.'):
+def static_route(self:FastHTML, ext='', prefix='/', static_path='.') -> None:
     "Add a static route at URL path `prefix` with files from `static_path` and single `ext` (including the '.')"
     @self.route(f"{prefix}{{fname:path}}{ext}")
     async def get(fname:str): return FileResponse(f'{static_path}/{fname}{ext}')
 
 # %% ../nbs/api/00_core.ipynb
 class StaticNoCache(StaticFiles):
-    def file_response(self, *args, **kwargs):
+    def file_response(self, *args, **kwargs) -> Response:
         resp = super().file_response(*args, **kwargs)
         resp.headers.setdefault("Cache-Control", "no-cache")
         return resp
@@ -847,11 +847,11 @@ class MiddlewareBase:
 # %% ../nbs/api/00_core.ipynb
 class FtResponse:
     "Wrap an FT response with any Starlette `Response`"
-    def __init__(self, content, status_code:int=200, headers=None, cls=HTMLResponse, media_type:str|None=None, background: BackgroundTask | None = None):
+    def __init__(self, content, status_code:int=200, headers=None, cls=HTMLResponse, media_type:str|None=None, background: BackgroundTask | None = None) -> None:
         self.content,self.status_code,self.headers = content,status_code,headers
         self.cls,self.media_type,self.background = cls,media_type,background
 
-    def __response__(self, req):
+    def __response__(self, req) -> Response:
         resp,kw = _part_resp(req, self.content)
         cts = _xt_cts(req, resp)
         tasks,httphdrs = kw.get('background'),kw.get('headers')
@@ -860,7 +860,7 @@ class FtResponse:
         return self.cls(cts, status_code=self.status_code, headers=headers, media_type=self.media_type, background=tasks)
 
 # %% ../nbs/api/00_core.ipynb
-def unqid(seeded=False):
+def unqid(seeded=False) -> str:
     id4 = UUID(int=random.getrandbits(128), version=4) if seeded else uuid4()
     res = b64encode(id4.bytes)
     return '_' + res.decode().rstrip('=').translate(str.maketrans('+/', '_-'))
@@ -887,7 +887,7 @@ def setup_ws(app:FastHTML, f=noop):
 devtools_loc = "/.well-known/appspecific/com.chrome.devtools.json"
 
 @patch
-def devtools_json(self:FastHTML, path=None, uuid=None):
+def devtools_json(self:FastHTML, path=None, uuid=None) -> None:
     if not path: path = Path().absolute()
     if not uuid: uuid = get_key()
     @self.route(devtools_loc)

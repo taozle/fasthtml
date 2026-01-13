@@ -70,33 +70,33 @@ def Style(*c, **kwargs)->FT:
     return ft_html('style', map(NotStr,c), **kwargs)
 
 # %% ../nbs/api/02_xtend.ipynb
-def double_braces(s):
+def double_braces(s: str) -> str:
     "Convert single braces to double braces if next to special chars or newline"
     s = re.sub(r'{(?=[\s:;\'"]|$)', '{{', s)
     return re.sub(r'(^|[\s:;\'"])}', r'\1}}', s)
 
 # %% ../nbs/api/02_xtend.ipynb
-def undouble_braces(s):
+def undouble_braces(s: str) -> str:
     "Convert double braces to single braces if next to special chars or newline"
     s = re.sub(r'\{\{(?=[\s:;\'"]|$)', '{', s)
     return re.sub(r'(^|[\s:;\'"])\}\}', r'\1}', s)
 
 # %% ../nbs/api/02_xtend.ipynb
-def loose_format(s, **kw):
+def loose_format(s: str, **kw) -> str:
     "String format `s` using `kw`, without being strict about braces outside of template params"
     if not kw: return s
     return undouble_braces(partial_format(double_braces(s), **kw)[0])
 
 # %% ../nbs/api/02_xtend.ipynb
 def ScriptX(fname, src=None, nomodule=None, type=None, _async=None, defer=None,
-            charset=None, crossorigin=None, integrity=None, **kw):
+            charset=None, crossorigin=None, integrity=None, **kw) -> FT:
     "A `script` element with contents read from `fname`"
     s = loose_format(Path(fname).read_text(), **kw)
     return Script(s, src=src, nomodule=nomodule, type=type, _async=_async, defer=defer,
                   charset=charset, crossorigin=crossorigin, integrity=integrity)
 
 # %% ../nbs/api/02_xtend.ipynb
-def replace_css_vars(css, pre='tpl', **kwargs):
+def replace_css_vars(css: str, pre: str = 'tpl', **kwargs) -> str:
     "Replace `var(--)` CSS variables with `kwargs` if name prefix matches `pre`"
     if not kwargs: return css
     def replace_var(m):
@@ -105,7 +105,7 @@ def replace_css_vars(css, pre='tpl', **kwargs):
     return re.sub(fr'var\(--{pre}-([\w-]+)\)', replace_var, css)
 
 # %% ../nbs/api/02_xtend.ipynb
-def StyleX(fname, **kw):
+def StyleX(fname, **kw) -> FT:
     "A `style` element with contents read from `fname` and variables replaced from `kw`"
     s = Path(fname).read_text()
     attrs = ['type', 'media', 'scoped', 'title', 'nonce', 'integrity', 'crossorigin']
@@ -113,12 +113,12 @@ def StyleX(fname, **kw):
     return Style(replace_css_vars(s, **kw), **sty_kw)
 
 # %% ../nbs/api/02_xtend.ipynb
-def Nbsp():
+def Nbsp() -> Safe:
     "A non-breaking space"
     return Safe('&nbsp;')
 
 # %% ../nbs/api/02_xtend.ipynb
-def Surreal(code:str):
+def Surreal(code:str) -> FT:
     "Wrap `code` in `domReadyExecute` and set `m=me()` and `p=me('-')`"
     return Script('''
 {
@@ -131,7 +131,7 @@ def Surreal(code:str):
 }''' % code)
 
 # %% ../nbs/api/02_xtend.ipynb
-def On(code:str, event:str='click', sel:str='', me=True):
+def On(code:str, event:str='click', sel:str='', me:bool=True) -> FT:
     "An async surreal.js script block event handler for `event` on selector `sel,p`, making available parent `p`, event `ev`, and target `e`"
     func = 'me' if me else 'any'
     if sel=='-': sel='p'
@@ -144,30 +144,30 @@ def On(code:str, event:str='click', sel:str='', me=True):
 });''' % (sel,event,code))
 
 # %% ../nbs/api/02_xtend.ipynb
-def Prev(code:str, event:str='click'):
+def Prev(code:str, event:str='click') -> FT:
     "An async surreal.js script block event handler for `event` on previous sibling, with same vars as `On`"
     return On(code, event=event, sel='-')
 
 # %% ../nbs/api/02_xtend.ipynb
-def Now(code:str, sel:str=''):
+def Now(code:str, sel:str='') -> FT:
     "An async surreal.js script block on selector `me(sel)`"
     if sel: sel=f'"{sel}"'
     return Script('(async (ee = me(%s)) => {\nlet e = me(ee);\n%s\n})()\n' % (sel,code))
 
 # %% ../nbs/api/02_xtend.ipynb
-def AnyNow(sel:str, code:str):
+def AnyNow(sel:str, code:str) -> FT:
     "An async surreal.js script block on selector `any(sel)`"
     return Script('(async (e = any("%s")) => {\n%s\n})()\n' % (sel,code))
 
 # %% ../nbs/api/02_xtend.ipynb
-def run_js(js, id=None, **kw):
+def run_js(js, id=None, **kw) -> FT:
     "Run `js` script, auto-generating `id` based on name of caller if needed, and js-escaping any `kw` params"
     if not id: id = sys._getframe(1).f_code.co_name
     kw = {k:dumps(v) for k,v in kw.items()}
     return Script(js.format(**kw), id=id, hx_swap_oob='true')
 
 # %% ../nbs/api/02_xtend.ipynb
-def HtmxOn(eventname:str, code:str):
+def HtmxOn(eventname:str, code:str) -> FT:
     return Script('''domReadyExecute(function() {
 document.body.addEventListener("htmx:%s", function(event) { %s })
 })''' % (eventname, code))
@@ -183,7 +183,7 @@ def jsd(org, repo, root, path, prov='gh', typ='script', ver=None, esm=False, **k
 # %% ../nbs/api/02_xtend.ipynb
 class Fragment(FT):
     "An empty tag, used as a container"
-    def __init__(self, *c): super().__init__('', c, {}, void_=True)
+    def __init__(self, *c) -> None: super().__init__('', c, {}, void_=True)
 
 # %% ../nbs/api/02_xtend.ipynb
 @delegates(ft_hx, keep=True)
@@ -192,7 +192,7 @@ def Titled(title:str="FastHTML app", *args, cls="container", **kwargs)->FT:
     return Title(title), Main(H1(title), *args, cls=cls, **kwargs)
 
 # %% ../nbs/api/02_xtend.ipynb
-def Socials(title, site_name, description, image, url=None, w=1200, h=630, twitter_site=None, creator=None, card='summary'):
+def Socials(title, site_name, description, image, url=None, w=1200, h=630, twitter_site=None, creator=None, card='summary') -> tuple[FT, ...]:
     "OG and Twitter social card headers"
     if not url: url=site_name
     if not url.startswith('http'): url = f'https://{url}'
@@ -215,7 +215,7 @@ def Socials(title, site_name, description, image, url=None, w=1200, h=630, twitt
     return tuple(res)
 
 # %% ../nbs/api/02_xtend.ipynb
-def YouTubeEmbed(video_id:str, *, width:int=560, height:int=315, start_time:int=0, no_controls:bool=False, title:str="YouTube video player", cls:str="", **kwargs):
+def YouTubeEmbed(video_id:str, *, width:int=560, height:int=315, start_time:int=0, no_controls:bool=False, title:str="YouTube video player", cls:str="", **kwargs) -> FT:
     """Embed a YouTube video"""
     if not video_id or not isinstance(video_id, str):
         raise ValueError("A valid YouTube video ID is required")
@@ -235,13 +235,13 @@ def YouTubeEmbed(video_id:str, *, width:int=560, height:int=315, start_time:int=
         ), cls=cls)
 
 # %% ../nbs/api/02_xtend.ipynb
-def Favicon(light_icon, dark_icon):
+def Favicon(light_icon, dark_icon) -> tuple[FT, FT]:
     "Light and dark favicon headers"
     return (Link(rel='icon', type='image/x-ico', href=light_icon, media='(prefers-color-scheme: light)'),
             Link(rel='icon', type='image/x-ico', href=dark_icon, media='(prefers-color-scheme: dark)'))
 
 # %% ../nbs/api/02_xtend.ipynb
-def clear(id): return Div(hx_swap_oob='innerHTML', id=id)
+def clear(id) -> FT: return Div(hx_swap_oob='innerHTML', id=id)
 
 # %% ../nbs/api/02_xtend.ipynb
 sid_scr = Script('''
@@ -262,7 +262,7 @@ htmx.on("htmx:configRequest", (e) => {
 ''')
 
 # %% ../nbs/api/02_xtend.ipynb
-def with_sid(app, dest, path='/'):
+def with_sid(app, dest, path='/') -> None:
     @app.route(path)
     def get(): return Div(hx_get=dest, hx_trigger=f'load delay:0.001s', hx_swap='outerHTML')
 
@@ -318,7 +318,7 @@ def LdCourse(name:str, description:str, provider:dict, course_instance:dict=None
     return LdJson("Course", data, extra=extra, script=script)
 
 # %% ../nbs/api/02_xtend.ipynb
-def robots_txt(app, allow_all=True, disallow_paths=None, sitemap_url=None, crawl_delay=None):
+def robots_txt(app, allow_all=True, disallow_paths=None, sitemap_url=None, crawl_delay=None) -> None:
     "Add a /robots.txt route to the app"
     @app.route("/robots.txt")
     def get():
@@ -334,7 +334,7 @@ def robots_txt(app, allow_all=True, disallow_paths=None, sitemap_url=None, crawl
 from fastcore.xml import Url,Loc,Lastmod,Changefreq,Priority,Urlset
 
 # %% ../nbs/api/02_xtend.ipynb
-def sitemap_url(url_info, loc_base=""):
+def sitemap_url(url_info, loc_base="") -> FT:
     "Create a sitemap URL element from url_info (string or dict)"
     if isinstance(url_info, str): return Url(Loc(loc_base + url_info))
     loc = loc_base + url_info['loc']
@@ -344,7 +344,7 @@ def sitemap_url(url_info, loc_base=""):
     if 'priority' in url_info: url_elem.append(Priority(str(url_info['priority'])))
     return Url(*url_elem)
 
-def sitemap_xml(app, urls, loc_base=""):
+def sitemap_xml(app, urls, loc_base="") -> None:
     "Add a /sitemap.xml route to the app with list of URLs"
     @app.route("/sitemap.xml")
     def get():
