@@ -85,6 +85,6 @@ def Container(*args, **kwargs) -> FT:
     return Main(*args, cls="container", **kwargs)
 
 # %% ../nbs/api/04_pico.ipynb
-def PicoBusy() -> FT:
+def PicoBusy() -> tuple[FT, FT]:
     return (HtmxOn('beforeRequest', "event.detail.elt.setAttribute('aria-busy', 'true' )"),
             HtmxOn('afterRequest',  "event.detail.elt.setAttribute('aria-busy', 'false')"))

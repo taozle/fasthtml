@@ -464,7 +464,7 @@ def _resp(req, resp, cls=empty, status_code=200):
 class Redirect:
     "Use HTMX or Starlette RedirectResponse as required to redirect to `loc`"
     def __init__(self, loc) -> None: self.loc = loc
-    def __response__(self, req) -> Response:
+    def __response__(self, req) -> HttpHeader | tuple[HttpHeader, ...] | Response:
         if 'hx-request' in req.headers: return HtmxResponseHeaders(redirect=self.loc)
         return RedirectResponse(self.loc, status_code=303)
 
