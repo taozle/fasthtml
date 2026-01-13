@@ -19,7 +19,7 @@ from fastcore.xml import *
 from fastcore.meta import use_kwargs_dict
 
 from types import UnionType, SimpleNamespace as ns, GenericAlias
-from typing import Optional, get_type_hints, get_args, get_origin, Union, Mapping, TypedDict, List, Any
+from typing import Callable, Optional, get_type_hints, get_args, get_origin, Union, Mapping, TypedDict, List, Any
 from datetime import datetime,date
 from dataclasses import dataclass,fields
 from collections import namedtuple
@@ -216,7 +216,7 @@ async def _wrap_req(req, params):
     return {arg:await _find_p(req, arg, p) for arg,p in params.items()}
 
 # %% ../nbs/api/00_core.ipynb
-def flat_xt(lst) -> tuple:
+def flat_xt(lst: list | tuple | FT | str) -> tuple:
     "Flatten lists"
     result = []
     if isinstance(lst,(FT,str)): lst=[lst]
@@ -227,7 +227,7 @@ def flat_xt(lst) -> tuple:
 
 # %% ../nbs/api/00_core.ipynb
 class Beforeware:
-    def __init__(self, f, skip=None) -> None: self.f,self.skip = f,skip or []
+    def __init__(self, f: Callable, skip: list | None = None) -> None: self.f,self.skip = f,skip or []
 
 # %% ../nbs/api/00_core.ipynb
 async def _handle(f, *args, **kwargs):
@@ -289,7 +289,7 @@ def _ws_endp(recv, conn=None, disconn=None):
     return cls
 
 # %% ../nbs/api/00_core.ipynb
-def EventStream(s) -> StreamingResponse:
+def EventStream(s: Any) -> StreamingResponse:
     "Create a text/event-stream response from `s`"
     return StreamingResponse(s, media_type="text/event-stream")
 
@@ -383,12 +383,12 @@ def flat_tuple(o) -> tuple:
     return tuple(result)
 
 # %% ../nbs/api/00_core.ipynb
-def noop_body(c, req):
+def noop_body(c: Any, req: Request) -> Any:
     "Default Body wrap function which just returns the content"
     return c
 
 # %% ../nbs/api/00_core.ipynb
-def respond(req, heads, bdy) -> FT:
+def respond(req: Request, heads: list, bdy: tuple) -> FT:
     "Default FT response creation function"
     body_wrap = getattr(req, 'body_wrap', noop_body)
     params = inspect.signature(body_wrap).parameters
@@ -397,7 +397,7 @@ def respond(req, heads, bdy) -> FT:
     return Html(Head(*heads, *flat_xt(req.hdrs)), body, **req.htmlkw)
 
 # %% ../nbs/api/00_core.ipynb
-def is_full_page(req, resp) -> bool:
+def is_full_page(req: Request, resp: tuple | None) -> bool:
     "Check if response should be rendered as full page or fragment"
     if resp and any(getattr(o, 'tag', '')=='html' for o in resp): return True
     return 'hx-request' in req.headers and 'hx-history-restore-request' not in req.headers
@@ -498,7 +498,7 @@ viewport  = Meta(name="viewport", content="width=device-width, initial-scale=1, 
 charset   = Meta(charset="utf-8")
 
 # %% ../nbs/api/00_core.ipynb
-def get_key(key=None, fname='.sesskey') -> str:
+def get_key(key: str | None = None, fname: str = '.sesskey') -> str:
     "Get session key from `key` param or read/create from file `fname`"
     if key: return key
     fname = Path(fname)
@@ -643,7 +643,7 @@ def _add_ws(self:FastHTML, func, path, conn, disconn, name, middleware):
 
 # %% ../nbs/api/00_core.ipynb
 @patch
-def ws(self:FastHTML, path:str, conn=None, disconn=None, name=None, middleware=None):
+def ws(self:FastHTML, path:str, conn: Callable | None = None, disconn: Callable | None = None, name: str | None = None, middleware: list | None = None):
     "Add a websocket route at `path`"
     def f(func=noop): return self._add_ws(func, path, conn, disconn, name=name, middleware=middleware)
     return f
@@ -685,7 +685,7 @@ def _add_route(self:FastHTML, func, path, methods, name, include_in_schema, body
 
 # %% ../nbs/api/00_core.ipynb
 @patch
-def route(self:FastHTML, path:str=None, methods=None, name=None, include_in_schema=True, body_wrap=None):
+def route(self:FastHTML, path: str | None = None, methods: str | list | None = None, name: str | None = None, include_in_schema: bool = True, body_wrap: Callable | None = None):
     "Add a route at `path`"
     def f(func): return self._add_route(func, path, methods, name=name, include_in_schema=include_in_schema, body_wrap=body_wrap)
     return f(path) if callable(path) else f
@@ -701,14 +701,14 @@ def set_lifespan(self:FastHTML, value) -> None:
 
 # %% ../nbs/api/00_core.ipynb
 def serve(
-        appname=None, # Name of the module
-        app='app', # App instance to be served
-        host='0.0.0.0', # If host is 0.0.0.0 will convert to localhost
-        port=None, # If port is None it will default to 5001 or the PORT environment variable
-        reload=True, # Default is to reload the app upon code changes
-        reload_includes:list[str]|str|None=None, # Additional files to watch for changes
-        reload_excludes:list[str]|str|None=None # Files to ignore for changes
-        ):
+        appname: str | None = None, # Name of the module
+        app: str = 'app', # App instance to be served
+        host: str = '0.0.0.0', # If host is 0.0.0.0 will convert to localhost
+        port: int | None = None, # If port is None it will default to 5001 or the PORT environment variable
+        reload: bool = True, # Default is to reload the app upon code changes
+        reload_includes: list[str] | str | None = None, # Additional files to watch for changes
+        reload_excludes: list[str] | str | None = None # Files to ignore for changes
+        ) -> None:
     "Run the app in an async server, with live reload set as the default."
     bk = inspect.currentframe().f_back
     glb = bk.f_globals
@@ -747,7 +747,7 @@ class RouteFuncs:
 # %% ../nbs/api/00_core.ipynb
 class APIRouter:
     "Add routes to an app"
-    def __init__(self, prefix:str|None=None, body_wrap=noop_body):
+    def __init__(self, prefix: str | None = None, body_wrap: Callable = noop_body):
         self.routes,self.wss = [],[]
         self.rt_funcs = RouteFuncs()  # Store wrapped route function for discoverability
         self.prefix = prefix if prefix else ""
@@ -761,7 +761,7 @@ class APIRouter:
         if name not in all_meths: setattr(self.rt_funcs, name, wrapped)
         return wrapped
 
-    def __call__(self, path:str=None, methods=None, name=None, include_in_schema=True, body_wrap=None):
+    def __call__(self, path: str | None = None, methods: str | list | None = None, name: str | None = None, include_in_schema: bool = True, body_wrap: Callable | None = None):
         "Add a route at `path`"
         def f(func):
             p = self.prefix + ("/" + ('' if path.__name__=='index' else func.__name__) if callable(path) else path)
@@ -774,12 +774,12 @@ class APIRouter:
         try: return getattr(self.rt_funcs, name)
         except AttributeError: return super().__getattr__(self, name)
 
-    def to_app(self, app):
+    def to_app(self, app: FastHTML) -> None:
         "Add routes to `app`"
         for args in self.routes: app._add_route(*args)
         for args in self.wss: app._add_ws(*args)
 
-    def ws(self, path:str, conn=None, disconn=None, name=None, middleware=None):
+    def ws(self, path: str, conn: Callable | None = None, disconn: Callable | None = None, name: str | None = None, middleware: list | None = None):
         "Add a websocket route at `path`"
         def f(func=noop): return self.wss.append((func, f"{self.prefix}{path}", conn, disconn, name, middleware))
         return f
@@ -788,7 +788,7 @@ class APIRouter:
 for o in all_meths: setattr(APIRouter, o, partialmethod(APIRouter.__call__, methods=o))
 
 # %% ../nbs/api/00_core.ipynb
-def cookie(key: str, value="", max_age=None, expires=None, path="/", domain=None, secure=False, httponly=False, samesite="lax",) -> HttpHeader:
+def cookie(key: str, value: str = "", max_age: int | None = None, expires: datetime | str | None = None, path: str | None = "/", domain: str | None = None, secure: bool = False, httponly: bool = False, samesite: str = "lax") -> HttpHeader:
     "Create a 'set-cookie' `HttpHeader`"
     cookie = cookies.SimpleCookie()
     cookie[key] = value
@@ -806,7 +806,7 @@ def cookie(key: str, value="", max_age=None, expires=None, path="/", domain=None
     return HttpHeader("set-cookie", cookie_val)
 
 # %% ../nbs/api/00_core.ipynb
-def reg_re_param(m, s) -> None:
+def reg_re_param(m: str, s: str) -> None:
     cls = get_class(f'{m}Conv', sup=StringConvertor, regex=s)
     register_url_convertor(m, cls())
 
@@ -873,7 +873,7 @@ def _add_ids(s):
 
 # %% ../nbs/api/00_core.ipynb
 @patch
-def setup_ws(app:FastHTML, f=noop):
+def setup_ws(app:FastHTML, f: Callable = noop):
     conns = {}
     async def on_connect(scope, send): conns[scope.client] = send
     async def on_disconnect(scope): conns.pop(scope.client)
@@ -887,7 +887,7 @@ def setup_ws(app:FastHTML, f=noop):
 devtools_loc = "/.well-known/appspecific/com.chrome.devtools.json"
 
 @patch
-def devtools_json(self:FastHTML, path=None, uuid=None) -> None:
+def devtools_json(self:FastHTML, path: str | None = None, uuid: str | None = None) -> None:
     if not path: path = Path().absolute()
     if not uuid: uuid = get_key()
     @self.route(devtools_loc)
@@ -896,7 +896,7 @@ def devtools_json(self:FastHTML, path=None, uuid=None) -> None:
 
 # %% ../nbs/api/00_core.ipynb
 @patch
-def get_client(self:FastHTML, asink=False, **kw):
+def get_client(self:FastHTML, asink: bool = False, **kw):
     "Get an httpx client with session cookes set from `**kw`"
     signer = itsdangerous.TimestampSigner(self.secret_key)
     data = b64encode(dumps(kw).encode())

@@ -141,20 +141,20 @@ class AppleAppClient(_AppClient):
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def login_link(self:WebApplicationClient, redirect_uri, scope=None, state=None, **kwargs) -> str:
+def login_link(self:WebApplicationClient, redirect_uri: str, scope: str | list | None = None, state: str | None = None, **kwargs) -> str:
     "Get a login link for this client"
     if not scope: scope=self.scope
     if not state: state=getattr(self, 'state', None)
     return self.prepare_request_uri(self.base_url, redirect_uri, scope, state=state, **kwargs)
 
 # %% ../nbs/api/08_oauth.ipynb
-def get_host(request) -> str:
+def get_host(request: Request) -> str:
     """Get the host, preferring X-Forwarded-Host if available"""
     forwarded_host = request.headers.get('x-forwarded-host')
     return forwarded_host if forwarded_host else request.url.netloc
 
 # %% ../nbs/api/08_oauth.ipynb
-def redir_url(req, redir_path, scheme=None) -> str:
+def redir_url(req: Request, redir_path: str, scheme: str | None = None) -> str:
     "Get the redir url for the host in `request`"
     host = get_host(req)
     scheme = 'http' if host.split(':')[0] in ("localhost", "127.0.0.1") else 'https'
@@ -162,7 +162,7 @@ def redir_url(req, redir_path, scheme=None) -> str:
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def parse_response(self:_AppClient, code, redirect_uri) -> None:
+def parse_response(self:_AppClient, code: str, redirect_uri: str) -> None:
     "Get the token from the oauth2 server response"
     payload = dict(code=code, redirect_uri=redirect_uri, client_id=self.client_id,
                    client_secret=self.client_secret, grant_type='authorization_code')
@@ -172,7 +172,7 @@ def parse_response(self:_AppClient, code, redirect_uri) -> None:
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def get_info(self:_AppClient, token=None) -> dict:
+def get_info(self:_AppClient, token: str | None = None) -> dict:
     "Get the info for authenticated user"
     if not token: token = self.token["access_token"]
     headers = {'Authorization': f'Bearer {token}'}
@@ -180,25 +180,25 @@ def get_info(self:_AppClient, token=None) -> dict:
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def retr_info(self:_AppClient, code, redirect_uri) -> dict:
+def retr_info(self:_AppClient, code: str, redirect_uri: str) -> dict:
     "Combines `parse_response` and `get_info`"
     self.parse_response(code, redirect_uri)
     return self.get_info()
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def retr_id(self:_AppClient, code, redirect_uri):
+def retr_id(self:_AppClient, code: str, redirect_uri: str):
     "Call `retr_info` and then return id/subscriber value"
     return self.retr_info(code, redirect_uri)[self.id_key]
 
 # %% ../nbs/api/08_oauth.ipynb
 http_patterns = (r'^(localhost|127\.0\.0\.1)(:\d+)?$',)
-def url_match(request, patterns=http_patterns) -> bool:
+def url_match(request: Request, patterns: tuple = http_patterns) -> bool:
     return any(re.match(pattern, get_host(request).split(':')[0]) for pattern in patterns)
 
 # %% ../nbs/api/08_oauth.ipynb
 class OAuth:
-    def __init__(self, app, cli, skip=None, redir_path='/redirect', error_path='/error', logout_path='/logout', login_path='/login', https=True, http_patterns=http_patterns, redir_method='get') -> None:
+    def __init__(self, app: FastHTML, cli: _AppClient, skip: list | None = None, redir_path: str = '/redirect', error_path: str = '/error', logout_path: str = '/logout', login_path: str = '/login', https: bool = True, http_patterns: tuple = http_patterns, redir_method: str = 'get') -> None:
         if not skip: skip = [redir_path,error_path,login_path]
         redir_handler = app.post if redir_method == 'post' else app.get
         store_attr()
@@ -231,14 +231,14 @@ class OAuth:
             return self.logout(session)
 
     def redir_login(self, session): return RedirectResponse(self.login_path, status_code=303)
-    def redir_url(self, req) -> str:
+    def redir_url(self, req: Request) -> str:
         scheme = 'http' if url_match(req,self.http_patterns) or not self.https else 'https'
         return redir_url(req, self.redir_path, scheme)
 
-    def login_link(self, req, scope=None, state=None) -> str: return self.cli.login_link(self.redir_url(req), scope=scope, state=state)
-    def check_invalid(self, req, session, auth): return False
-    def logout(self, session): return self.redir_login(session)
-    def get_auth(self, info, ident, session, state): raise NotImplementedError()
+    def login_link(self, req: Request, scope: str | list | None = None, state: str | None = None) -> str: return self.cli.login_link(self.redir_url(req), scope=scope, state=state)
+    def check_invalid(self, req: Request, session: dict, auth) -> bool: return False
+    def logout(self, session: dict): return self.redir_login(session)
+    def get_auth(self, info: dict, ident, session: dict, state): raise NotImplementedError()
 
 # %% ../nbs/api/08_oauth.ipynb
 try:
@@ -265,12 +265,12 @@ def update(self:Credentials) -> 'Credentials':
 
 # %% ../nbs/api/08_oauth.ipynb
 @patch
-def save(self:Credentials, fname) -> None:
+def save(self:Credentials, fname: str) -> None:
     "Save credentials to `fname`"
     save_pickle(fname, self)
 
 # %% ../nbs/api/08_oauth.ipynb
-def load_creds(fname) -> Credentials:
+def load_creds(fname: str) -> Credentials:
     "Load credentials from `fname`"
     return load_pickle(fname).update()
 

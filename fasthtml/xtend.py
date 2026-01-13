@@ -25,19 +25,19 @@ except ImportError: display=None
 
 # %% ../nbs/api/02_xtend.ipynb
 @delegates(ft_hx, keep=True)
-def A(*c, hx_get=None, target_id=None, hx_swap=None, href='#', **kwargs)->FT:
+def A(*c, hx_get: str | None = None, target_id: str | None = None, hx_swap: str | None = None, href: str = '#', **kwargs) -> FT:
     "An A tag; `href` defaults to '#' for more concise use with HTMX"
     return ft_hx('a', *c, href=href, hx_get=hx_get, target_id=target_id, hx_swap=hx_swap, **kwargs)
 
 # %% ../nbs/api/02_xtend.ipynb
 @delegates(ft_hx, keep=True)
-def AX(txt, hx_get=None, target_id=None, hx_swap=None, href='#', **kwargs)->FT:
+def AX(txt: str, hx_get: str | None = None, target_id: str | None = None, hx_swap: str | None = None, href: str = '#', **kwargs) -> FT:
     "An A tag with just one text child, allowing hx_get, target_id, and hx_swap to be positional params"
     return ft_hx('a', txt, href=href, hx_get=hx_get, target_id=target_id, hx_swap=hx_swap, **kwargs)
 
 # %% ../nbs/api/02_xtend.ipynb
 @delegates(ft_hx, keep=True)
-def Form(*c, enctype="multipart/form-data", **kwargs)->FT:
+def Form(*c, enctype: str = "multipart/form-data", **kwargs) -> FT:
     "A Form tag; identical to plain `ft_hx` version except default `enctype='multipart/form-data'`"
     return ft_hx('form', *c, enctype=enctype, **kwargs)
 
@@ -49,7 +49,7 @@ def Hidden(value:Any="", id:Any=None, **kwargs)->FT:
 
 # %% ../nbs/api/02_xtend.ipynb
 @delegates(ft_hx, keep=True)
-def CheckboxX(checked:bool=False, label=None, value="1", id=None, name=None, **kwargs)->FT:
+def CheckboxX(checked: bool = False, label: str | None = None, value: str = "1", id: str | None = None, name: str | None = None, **kwargs) -> FT:
     "A Checkbox optionally inside a Label, preceded by a `Hidden` with matching name"
     if id and not name: name=id
     if not checked: checked=None
@@ -88,8 +88,8 @@ def loose_format(s: str, **kw) -> str:
     return undouble_braces(partial_format(double_braces(s), **kw)[0])
 
 # %% ../nbs/api/02_xtend.ipynb
-def ScriptX(fname, src=None, nomodule=None, type=None, _async=None, defer=None,
-            charset=None, crossorigin=None, integrity=None, **kw) -> FT:
+def ScriptX(fname: str, src: str | None = None, nomodule: bool | None = None, type: str | None = None, _async: bool | None = None, defer: bool | None = None,
+            charset: str | None = None, crossorigin: str | None = None, integrity: str | None = None, **kw) -> FT:
     "A `script` element with contents read from `fname`"
     s = loose_format(Path(fname).read_text(), **kw)
     return Script(s, src=src, nomodule=nomodule, type=type, _async=_async, defer=defer,
@@ -105,7 +105,7 @@ def replace_css_vars(css: str, pre: str = 'tpl', **kwargs) -> str:
     return re.sub(fr'var\(--{pre}-([\w-]+)\)', replace_var, css)
 
 # %% ../nbs/api/02_xtend.ipynb
-def StyleX(fname, **kw) -> FT:
+def StyleX(fname: str, **kw) -> FT:
     "A `style` element with contents read from `fname` and variables replaced from `kw`"
     s = Path(fname).read_text()
     attrs = ['type', 'media', 'scoped', 'title', 'nonce', 'integrity', 'crossorigin']
@@ -160,7 +160,7 @@ def AnyNow(sel:str, code:str) -> FT:
     return Script('(async (e = any("%s")) => {\n%s\n})()\n' % (sel,code))
 
 # %% ../nbs/api/02_xtend.ipynb
-def run_js(js, id=None, **kw) -> FT:
+def run_js(js: str, id: str | None = None, **kw) -> FT:
     "Run `js` script, auto-generating `id` based on name of caller if needed, and js-escaping any `kw` params"
     if not id: id = sys._getframe(1).f_code.co_name
     kw = {k:dumps(v) for k,v in kw.items()}
@@ -173,7 +173,7 @@ document.body.addEventListener("htmx:%s", function(event) { %s })
 })''' % (eventname, code))
 
 # %% ../nbs/api/02_xtend.ipynb
-def jsd(org, repo, root, path, prov='gh', typ='script', ver=None, esm=False, **kwargs)->FT:
+def jsd(org: str, repo: str, root: str, path: str, prov: str = 'gh', typ: str = 'script', ver: str | None = None, esm: bool = False, **kwargs) -> FT:
     "jsdelivr `Script` or CSS `Link` tag, or URL"
     ver = '@'+ver if ver else ''
     s = f'https://cdn.jsdelivr.net/{prov}/{org}/{repo}{ver}/{root}/{path}'
@@ -192,7 +192,7 @@ def Titled(title:str="FastHTML app", *args, cls="container", **kwargs)->FT:
     return Title(title), Main(H1(title), *args, cls=cls, **kwargs)
 
 # %% ../nbs/api/02_xtend.ipynb
-def Socials(title, site_name, description, image, url=None, w=1200, h=630, twitter_site=None, creator=None, card='summary') -> tuple[FT, ...]:
+def Socials(title: str, site_name: str, description: str, image: str, url: str | None = None, w: int = 1200, h: int = 630, twitter_site: str | None = None, creator: str | None = None, card: str = 'summary') -> tuple[FT, ...]:
     "OG and Twitter social card headers"
     if not url: url=site_name
     if not url.startswith('http'): url = f'https://{url}'
@@ -235,13 +235,13 @@ def YouTubeEmbed(video_id:str, *, width:int=560, height:int=315, start_time:int=
         ), cls=cls)
 
 # %% ../nbs/api/02_xtend.ipynb
-def Favicon(light_icon, dark_icon) -> tuple[FT, FT]:
+def Favicon(light_icon: str, dark_icon: str) -> tuple[FT, FT]:
     "Light and dark favicon headers"
     return (Link(rel='icon', type='image/x-ico', href=light_icon, media='(prefers-color-scheme: light)'),
             Link(rel='icon', type='image/x-ico', href=dark_icon, media='(prefers-color-scheme: dark)'))
 
 # %% ../nbs/api/02_xtend.ipynb
-def clear(id) -> FT: return Div(hx_swap_oob='innerHTML', id=id)
+def clear(id: str) -> FT: return Div(hx_swap_oob='innerHTML', id=id)
 
 # %% ../nbs/api/02_xtend.ipynb
 sid_scr = Script('''
@@ -262,12 +262,12 @@ htmx.on("htmx:configRequest", (e) => {
 ''')
 
 # %% ../nbs/api/02_xtend.ipynb
-def with_sid(app, dest, path='/') -> None:
+def with_sid(app: FastHTML, dest: str, path: str = '/') -> None:
     @app.route(path)
     def get(): return Div(hx_get=dest, hx_trigger=f'load delay:0.001s', hx_swap='outerHTML')
 
 # %% ../nbs/api/02_xtend.ipynb
-def LdJson(typ, data:dict, script=False, extra=None, **kwargs)->FT:
+def LdJson(typ: str, data: dict, script: bool = False, extra: dict | None = None, **kwargs) -> FT:
     "A script tag containing JSON-LD structured data"
     cts = {'@type':typ, "@context": "https://schema.org"} | data | (extra or {})
     if not script: return cts
@@ -318,7 +318,7 @@ def LdCourse(name:str, description:str, provider:dict, course_instance:dict=None
     return LdJson("Course", data, extra=extra, script=script)
 
 # %% ../nbs/api/02_xtend.ipynb
-def robots_txt(app, allow_all=True, disallow_paths=None, sitemap_url=None, crawl_delay=None) -> None:
+def robots_txt(app: FastHTML, allow_all: bool = True, disallow_paths: list | None = None, sitemap_url: str | None = None, crawl_delay: int | None = None) -> None:
     "Add a /robots.txt route to the app"
     @app.route("/robots.txt")
     def get():
@@ -334,7 +334,7 @@ def robots_txt(app, allow_all=True, disallow_paths=None, sitemap_url=None, crawl
 from fastcore.xml import Url,Loc,Lastmod,Changefreq,Priority,Urlset
 
 # %% ../nbs/api/02_xtend.ipynb
-def sitemap_url(url_info, loc_base="") -> FT:
+def sitemap_url(url_info: str | dict, loc_base: str = "") -> FT:
     "Create a sitemap URL element from url_info (string or dict)"
     if isinstance(url_info, str): return Url(Loc(loc_base + url_info))
     loc = loc_base + url_info['loc']
@@ -344,7 +344,7 @@ def sitemap_url(url_info, loc_base="") -> FT:
     if 'priority' in url_info: url_elem.append(Priority(str(url_info['priority'])))
     return Url(*url_elem)
 
-def sitemap_xml(app, urls, loc_base="") -> None:
+def sitemap_xml(app: FastHTML, urls: list, loc_base: str = "") -> None:
     "Add a /sitemap.xml route to the app with list of URLs"
     @app.route("/sitemap.xml")
     def get():

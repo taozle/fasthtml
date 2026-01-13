@@ -31,7 +31,7 @@ g = globals()
 for o in _all_: g[o] = partial(ft_hx, o[0].lower() + o[1:])
 
 # %% ../nbs/api/05_svg.ipynb
-def Svg(*args, viewBox=None, h=None, w=None, height=None, width=None, xmlns="http://www.w3.org/2000/svg", **kwargs) -> FT:
+def Svg(*args, viewBox: str | None = None, h: int | None = None, w: int | None = None, height: int | None = None, width: int | None = None, xmlns: str = "http://www.w3.org/2000/svg", **kwargs) -> FT:
     "An SVG tag; xmlns is added automatically, and viewBox defaults to height and width if not provided"
     if h: height=h
     if w: width=w
@@ -40,33 +40,33 @@ def Svg(*args, viewBox=None, h=None, w=None, height=None, width=None, xmlns="htt
 
 # %% ../nbs/api/05_svg.ipynb
 @delegates(ft_hx)
-def ft_svg(tag: str, *c, transform=None, opacity=None, clip=None, mask=None, filter=None,
-           vector_effect=None, pointer_events=None, **kwargs) -> FT:
+def ft_svg(tag: str, *c, transform: str | None = None, opacity: float | None = None, clip: str | None = None, mask: str | None = None, filter: str | None = None,
+           vector_effect: str | None = None, pointer_events: str | None = None, **kwargs) -> FT:
     "Create a standard `FT` element with some SVG-specific attrs"
     return ft_hx(tag, *c, transform=transform, opacity=opacity, clip=clip, mask=mask, filter=filter,
            vector_effect=vector_effect, pointer_events=pointer_events, **kwargs)
 
 # %% ../nbs/api/05_svg.ipynb
 @delegates(ft_svg)
-def Rect(width, height, x=0, y=0, fill=None, stroke=None, stroke_width=None, rx=None, ry=None, **kwargs) -> FT:
+def Rect(width: int | float, height: int | float, x: int | float = 0, y: int | float = 0, fill: str | None = None, stroke: str | None = None, stroke_width: int | float | None = None, rx: int | float | None = None, ry: int | float | None = None, **kwargs) -> FT:
     "A standard SVG `rect` element"
     return ft_svg('rect', width=width, height=height, x=x, y=y, fill=fill,
                  stroke=stroke, stroke_width=stroke_width, rx=rx, ry=ry, **kwargs)
 
 # %% ../nbs/api/05_svg.ipynb
 @delegates(ft_svg)
-def Circle(r, cx=0, cy=0, fill=None, stroke=None, stroke_width=None, **kwargs) -> FT:
+def Circle(r: int | float, cx: int | float = 0, cy: int | float = 0, fill: str | None = None, stroke: str | None = None, stroke_width: int | float | None = None, **kwargs) -> FT:
     "A standard SVG `circle` element"
     return ft_svg('circle', r=r, cx=cx, cy=cy, fill=fill, stroke=stroke, stroke_width=stroke_width, **kwargs)
 
 # %% ../nbs/api/05_svg.ipynb
 @delegates(ft_svg)
-def Ellipse(rx, ry, cx=0, cy=0, fill=None, stroke=None, stroke_width=None, **kwargs) -> FT:
+def Ellipse(rx: int | float, ry: int | float, cx: int | float = 0, cy: int | float = 0, fill: str | None = None, stroke: str | None = None, stroke_width: int | float | None = None, **kwargs) -> FT:
     "A standard SVG `ellipse` element"
     return ft_svg('ellipse', rx=rx, ry=ry, cx=cx, cy=cy, fill=fill, stroke=stroke, stroke_width=stroke_width, **kwargs)
 
 # %% ../nbs/api/05_svg.ipynb
-def transformd(translate=None, scale=None, rotate=None, skewX=None, skewY=None, matrix=None) -> dict:
+def transformd(translate: tuple | None = None, scale: tuple | float | None = None, rotate: tuple | None = None, skewX: float | None = None, skewY: float | None = None, matrix: tuple | None = None) -> dict:
     "Create an SVG `transform` kwarg dict"
     funcs = []
     if translate is not None: funcs.append(f"translate{translate}")
@@ -79,29 +79,29 @@ def transformd(translate=None, scale=None, rotate=None, skewX=None, skewY=None, 
 
 # %% ../nbs/api/05_svg.ipynb
 @delegates(ft_svg)
-def Line(x1, y1, x2=0, y2=0, stroke=None, w=None, stroke_width=None, **kwargs) -> FT:
+def Line(x1: int | float, y1: int | float, x2: int | float = 0, y2: int | float = 0, stroke: str | None = None, w: int | float | None = None, stroke_width: int | float | None = None, **kwargs) -> FT:
     "A standard SVG `line` element"
     if w: stroke_width = w
     return ft_svg('line', x1=x1, y1=y1, x2=x2, y2=y2, stroke=stroke, stroke_width=stroke_width, **kwargs)
 
 # %% ../nbs/api/05_svg.ipynb
 @delegates(ft_svg)
-def Polyline(*args, points=None, fill=None, stroke=None, stroke_width=None, **kwargs) -> FT:
+def Polyline(*args, points: str | None = None, fill: str | None = None, stroke: str | None = None, stroke_width: int | float | None = None, **kwargs) -> FT:
     "A standard SVG `polyline` element"
     if points is None: points = ' '.join(f"{x},{y}" for x, y in args)
     return ft_svg('polyline', points=points, fill=fill, stroke=stroke, stroke_width=stroke_width, **kwargs)
 
 # %% ../nbs/api/05_svg.ipynb
 @delegates(ft_svg)
-def Polygon(*args, points=None, fill=None, stroke=None, stroke_width=None, **kwargs) -> FT:
+def Polygon(*args, points: str | None = None, fill: str | None = None, stroke: str | None = None, stroke_width: int | float | None = None, **kwargs) -> FT:
     "A standard SVG `polygon` element"
     if points is None: points = ' '.join(f"{x},{y}" for x, y in args)
     return ft_svg('polygon', points=points, fill=fill, stroke=stroke, stroke_width=stroke_width, **kwargs)
 
 # %% ../nbs/api/05_svg.ipynb
 @delegates(ft_svg)
-def Text(*args, x=0, y=0, font_family=None, font_size=None, fill=None, text_anchor=None,
-         dominant_baseline=None, font_weight=None, font_style=None, text_decoration=None, **kwargs) -> FT:
+def Text(*args, x: int | float = 0, y: int | float = 0, font_family: str | None = None, font_size: int | str | None = None, fill: str | None = None, text_anchor: str | None = None,
+         dominant_baseline: str | None = None, font_weight: str | int | None = None, font_style: str | None = None, text_decoration: str | None = None, **kwargs) -> FT:
     "A standard SVG `text` element"
     return ft_svg('text', *args, x=x, y=y, font_family=font_family, font_size=font_size, fill=fill,
                  text_anchor=text_anchor, dominant_baseline=dominant_baseline, font_weight=font_weight,
@@ -156,7 +156,7 @@ class PathFT(FT):
 
 # %% ../nbs/api/05_svg.ipynb
 @delegates(ft_svg)
-def Path(d='', fill=None, stroke=None, stroke_width=None, **kwargs) -> PathFT:
+def Path(d: str = '', fill: str | None = None, stroke: str | None = None, stroke_width: int | float | None = None, **kwargs) -> PathFT:
     "Create a standard `path` SVG element. This is a special object"
     return ft_svg('path', d=d, fill=fill, stroke=stroke, stroke_width=stroke_width, ft_cls=PathFT, **kwargs)
 
